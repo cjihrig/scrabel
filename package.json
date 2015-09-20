@@ -1,0 +1,39 @@
+{
+  "name": "scrabel",
+  "version": "0.1.0",
+  "description": "Babel transpilation as needed",
+  "author": "Continuation Labs <contact@continuation.io> (http://continuation.io/)",
+  "main": "lib/index.js",
+  "homepage": "https://github.com/continuationlabs/scrabel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/continuationlabs/scrabel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/continuationlabs/scrabel/issues"
+  },
+  "license": "MIT",
+  "bin": {
+    "scrabel": "./bin/scrabel"
+  },
+  "scripts": {
+    "test": "lab -v -t 50 -a code"
+  },
+  "dependencies": {
+    "babel": "5.x.x",
+    "bossy": "2.x.x",
+    "fs-extra": "0.24.x",
+    "insync": "2.x.x",
+    "semver": "5.x.x"
+  },
+  "devDependencies": {
+    "code": "1.x.x",
+    "lab": "5.x.x"
+  },
+  "keywords": [
+    "babel",
+    "transpile",
+    "transpilation",
+    "conditional"
+  ]
+}
