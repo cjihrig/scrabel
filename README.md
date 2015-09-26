@@ -24,3 +24,14 @@ console.log('hello ' + foo);
 ```
 
 `scrabel` detects the version of Node being run and disables transformations that are not required. So, a user running 0.10 would get string concatenation, while a user running Node 4.0 would get the original template literal.
+
+## Usage
+
+Add `scrabel` as a dependency (or dev dependency) in your project's `package.json`. Inside your npm `scripts` section, do something like this (assuming your source code is in `src`, and you want to transpile to `lib`):
+
+```
+"scripts": {
+  "transpile": "scrabel --in-dir src --out-dir lib",
+  "prepublish": "npm run transpile"
+}
+```
