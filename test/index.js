@@ -57,7 +57,7 @@ describe('Scrabel', function() {
     });
 
     it('does not blacklist anything for old versions of node', function(done) {
-      var blacklist = Scrabel.createBlacklist('0.10.0', Features);
+      var blacklist = Scrabel.createBlacklist('0.8.0', Features);
 
       expect(blacklist).to.deep.equal([]);
       done();

@@ -1,6 +1,6 @@
 {
   "name": "scrabel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Babel transpilation as needed",
   "author": "Continuation Labs <contact@continuation.io> (http://continuation.io/)",
   "main": "lib/index.js",
