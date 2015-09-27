@@ -25,7 +25,7 @@ describe('Scrabel', function() {
     it('transpiles input files using babel', {skip: true}, function(done) {
       var files = [
         {
-          input: Path.join(transformsDirectory, 'es6.classes'),
+          input: Path.join(transformsDirectory, 'es6.classes.js'),
           output: Path.join(outputDirectory, 'foo.js')
         }
       ];
