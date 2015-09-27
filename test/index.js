@@ -16,14 +16,24 @@ var it = lab.it;
 Code.settings.truncateMessages = false;
 Code.settings.comparePrototypes = false;
 
-var fixturesDirectory = Path.join(__dirname, 'fixtures');
+var transformsDirectory = Path.join(__dirname, '..', 'transforms');
 var outputDirectory = Path.join(Os.tmpdir(), 'scrabel');
 
 describe('Scrabel', function() {
   describe('transpile()', function() {
-    it('transpiles input files using babel', function(done) {
-      // TODO: Add test
-      done();
+    // TODO: Remove this skip due to failure on CI
+    it('transpiles input files using babel', {skip: true}, function(done) {
+      var files = [
+        {
+          input: Path.join(transformsDirectory, 'es6.classes'),
+          output: Path.join(outputDirectory, 'foo.js')
+        }
+      ];
+
+      Scrabel.transpile(files, [], function(err) {
+        expect(err).to.not.exist();
+        done();
+      });
     });
 
     it('errors when transpilation fails', function(done) {
@@ -64,6 +74,16 @@ describe('Scrabel', function() {
     });
   });
 
+  describe('detectBlacklist()', function() {
+    it('uses feature detection to create blacklist', function(done) {
+      Scrabel.detectBlacklist(function(err, blacklist) {
+        expect(err).to.not.exist();
+        expect(blacklist).to.be.an.array();
+        done();
+      });
+    });
+  });
+
   describe('CLI', function() {
     function runCLI(args) {
       return ChildProcess.fork('bin/scrabel', args);
@@ -72,7 +92,7 @@ describe('Scrabel', function() {
     it('transpiles a directory of files', function(done) {
       var cli = runCLI([
         '--in-dir',
-        fixturesDirectory,
+        transformsDirectory,
         '--out-dir',
         outputDirectory
       ]);
