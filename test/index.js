@@ -7,6 +7,7 @@ var Code = require('code');
 var Fse = require('fs-extra');
 var Lab = require('lab');
 var Features = require('../features.json');
+var Files = require('../lib/files');
 var Scrabel = require('../lib');
 var Cli = require('../lib/cli');
 
@@ -89,12 +90,12 @@ describe('Scrabel', function() {
     });
   });
 
-  describe('Scrabel.files', function() {
+  describe('Files', function() {
     it('maps a single input file to a single output file', function(done) {
       var inputFile = Path.join('fixtures', 'templateLiteral.js');
       var outputFile = Path.join(outputDirectory, 'foo.js');
 
-      Scrabel.files.getFilesFromArgs({
+      Files.getFilesFromArgs({
         input: inputFile,
         output: outputFile,
       }, function(err, map) {
@@ -114,7 +115,7 @@ describe('Scrabel', function() {
 
       Fse.createFileSync(outputFile);
 
-      Scrabel.files.getFilesFromArgs({
+      Files.getFilesFromArgs({
         input: inputFile,
         output: outputFile,
       }, function(err, map) {
@@ -134,7 +135,7 @@ describe('Scrabel', function() {
 
       Fse.ensureDirSync(outputDirectory);
 
-      Scrabel.files.getFilesFromArgs({
+      Files.getFilesFromArgs({
         input: inputFile,
         output: outputDirectory,
       }, function(err, map) {
@@ -153,7 +154,7 @@ describe('Scrabel', function() {
       var outputFile1 = Path.join(outputDirectory, 'class.js');
       var outputFile2 = Path.join(outputDirectory, 'literals.js');
 
-      Scrabel.files.getFilesFromArgs({
+      Files.getFilesFromArgs({
         input: inputDir,
         output: outputDirectory,
       }, function(err, map) {
@@ -162,7 +163,8 @@ describe('Scrabel', function() {
         expect(map.length).to.equal(2);
 
         map.forEach(function(file) {
-          expect(file.output === outputFile1 || file.output === outputFile2).to.equal(true);
+          expect(file.output === outputFile1 ||
+                 file.output === outputFile2).to.equal(true);
         });
 
         done();
@@ -170,11 +172,25 @@ describe('Scrabel', function() {
     });
 
     it('maps a glob to an output directory', function(done) {
-      // TODO: Complete glob handling
-      Scrabel.files.getFilesFromArgs({
-        input: Path.join('.', 'fixtures', '**'),
+      var inputPattern = Path.join('.', 'fixtures', '**');
+      var outputFile1 = Path.join(outputDirectory, 'templateLiteral.js');
+      var outputFile2 = Path.join(outputDirectory, 'dir1', 'class.js');
+      var outputFile3 = Path.join(outputDirectory, 'dir1', 'literals.js');
+
+      Files.getFilesFromArgs({
+        input: inputPattern,
         output: outputDirectory,
       }, function(err, map) {
+        expect(err).to.not.exist();
+        expect(map).to.be.an.array();
+        expect(map.length).to.equal(3);
+
+        map.forEach(function(file) {
+          expect(file.output === outputFile1 ||
+                 file.output === outputFile2 ||
+                 file.output === outputFile3).to.equal(true);
+        });
+
         done();
       });
     });

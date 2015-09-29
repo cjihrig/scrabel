@@ -1,6 +1,6 @@
 {
   "name": "scrabel",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Babel transpilation as needed",
   "author": "Continuation Labs <contact@continuation.io> (http://continuation.io/)",
   "main": "lib/index.js",
@@ -17,7 +17,7 @@
     "scrabel": "./bin/scrabel.js"
   },
   "scripts": {
-    "test": "lab -v -t 81 -a code"
+    "test": "lab -v -t 82 -a code"
   },
   "dependencies": {
     "babel": "5.x.x",
