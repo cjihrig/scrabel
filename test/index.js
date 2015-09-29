@@ -194,6 +194,28 @@ describe('Scrabel', function() {
         done();
       });
     });
+
+    it('maps a glob with pattern dir/*', function(done) {
+      var inputPattern = Path.join('.', 'fixtures', 'dir1', '*');
+      var outputFile1 = Path.join(outputDirectory, 'class.js');
+      var outputFile2 = Path.join(outputDirectory, 'literals.js');
+
+      Files.getFilesFromArgs({
+        input: inputPattern,
+        output: outputDirectory,
+      }, function(err, map) {
+        expect(err).to.not.exist();
+        expect(map).to.be.an.array();
+        expect(map.length).to.equal(2);
+
+        map.forEach(function(file) {
+          expect(file.output === outputFile1 ||
+                 file.output === outputFile2).to.equal(true);
+        });
+
+        done();
+      });
+    });
   });
 
   describe('CLI', function() {
