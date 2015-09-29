@@ -4,9 +4,11 @@ var Os = require('os');
 var Path = require('path');
 var Babel = require('babel');
 var Code = require('code');
+var Fse = require('fs-extra');
 var Lab = require('lab');
 var Features = require('../features.json');
 var Scrabel = require('../lib');
+var Cli = require('../lib/cli');
 
 var lab = exports.lab = Lab.script();
 var expect = Code.expect;
@@ -16,16 +18,19 @@ var it = lab.it;
 Code.settings.truncateMessages = false;
 Code.settings.comparePrototypes = false;
 
-var transformsDirectory = Path.join(__dirname, '..', 'transforms');
-var outputDirectory = Path.join(Os.tmpdir(), 'scrabel');
+var fixturesDirectory = Path.join(__dirname, '..', 'fixtures');
+var outputDirectory = Path.join(process.cwd(), 'test-tmp');
 
 describe('Scrabel', function() {
+  lab.afterEach(function(done) {
+    Fse.remove(outputDirectory, done);
+  });
+
   describe('transpile()', function() {
-    // TODO: Remove this skip due to failure on CI
-    it('transpiles input files using babel', {skip: true}, function(done) {
+    it('transpiles input files using babel', function(done) {
       var files = [
         {
-          input: Path.join(transformsDirectory, 'es6.classes.js'),
+          input: Path.join(fixturesDirectory, 'templateLiteral.js'),
           output: Path.join(outputDirectory, 'foo.js')
         }
       ];
@@ -84,6 +89,97 @@ describe('Scrabel', function() {
     });
   });
 
+  describe('Scrabel.files', function() {
+    it('maps a single input file to a single output file', function(done) {
+      var inputFile = Path.join('fixtures', 'templateLiteral.js');
+      var outputFile = Path.join(outputDirectory, 'foo.js');
+
+      Scrabel.files.getFilesFromArgs({
+        input: inputFile,
+        output: outputFile,
+      }, function(err, map) {
+        expect(err).to.not.exist();
+        expect(map).to.be.an.array();
+        expect(map.length).to.equal(1);
+        expect(Path.isAbsolute(map[0].input)).to.equal(true);
+        expect(map[0].input).to.endWith('templateLiteral.js');
+        expect(map[0].output).to.equal(outputFile);
+        done();
+      });
+    });
+
+    it('maps a single input file to an existing output file', function(done) {
+      var inputFile = Path.join(fixturesDirectory, 'templateLiteral.js');
+      var outputFile = Path.join(outputDirectory, 'index.js');
+
+      Fse.createFileSync(outputFile);
+
+      Scrabel.files.getFilesFromArgs({
+        input: inputFile,
+        output: outputFile,
+      }, function(err, map) {
+        expect(err).to.not.exist();
+        expect(map).to.be.an.array();
+        expect(map.length).to.equal(1);
+        expect(Path.isAbsolute(map[0].input)).to.equal(true);
+        expect(map[0].input).to.endWith('templateLiteral.js');
+        expect(map[0].output).to.equal(outputFile);
+        done();
+      });
+    });
+
+    it('maps a single input file to an existing output directory', function(done) {
+      var inputFile = Path.join('.', 'test', 'index.js');
+      var outputFile = Path.join(outputDirectory, 'index.js');
+
+      Fse.ensureDirSync(outputDirectory);
+
+      Scrabel.files.getFilesFromArgs({
+        input: inputFile,
+        output: outputDirectory,
+      }, function(err, map) {
+        expect(err).to.not.exist();
+        expect(map).to.be.an.array();
+        expect(map.length).to.equal(1);
+        expect(Path.isAbsolute(map[0].input)).to.equal(true);
+        expect(map[0].input).to.endWith('index.js');
+        expect(map[0].output).to.equal(outputFile);
+        done();
+      });
+    });
+
+    it('maps a single input directory to an output directory', function(done) {
+      var inputDir = Path.join('fixtures', 'dir1');
+      var outputFile1 = Path.join(outputDirectory, 'class.js');
+      var outputFile2 = Path.join(outputDirectory, 'literals.js');
+
+      Scrabel.files.getFilesFromArgs({
+        input: inputDir,
+        output: outputDirectory,
+      }, function(err, map) {
+        expect(err).to.not.exist();
+        expect(map).to.be.an.array();
+        expect(map.length).to.equal(2);
+
+        map.forEach(function(file) {
+          expect(file.output === outputFile1 || file.output === outputFile2).to.equal(true);
+        });
+
+        done();
+      });
+    });
+
+    it('maps a glob to an output directory', function(done) {
+      // TODO: Complete glob handling
+      Scrabel.files.getFilesFromArgs({
+        input: Path.join('.', 'fixtures', '**'),
+        output: outputDirectory,
+      }, function(err, map) {
+        done();
+      });
+    });
+  });
+
   describe('CLI', function() {
     function runCLI(args) {
       return ChildProcess.fork('bin/scrabel', args);
@@ -91,9 +187,9 @@ describe('Scrabel', function() {
 
     it('transpiles a directory of files', function(done) {
       var cli = runCLI([
-        '--in-dir',
-        transformsDirectory,
-        '--out-dir',
+        '-i',
+        fixturesDirectory,
+        '-o',
         outputDirectory
       ]);
 
