@@ -1,5 +1,6 @@
 'use strict';
 var ChildProcess = require('child_process');
+var Fs = require('fs');
 var Os = require('os');
 var Path = require('path');
 var Babel = require('babel');
@@ -81,11 +82,58 @@ describe('Scrabel', function() {
   });
 
   describe('detectBlacklist()', function() {
+    // The ordering of the tests for this function must be maintained.
+    // Specifically, the error tests must come first.
+    it('handles readdir() errors', function(done) {
+      var readdir = Fs.readdir;
+
+      Fs.readdir = function(dir, callback) {
+        callback(new Error(dir));
+      };
+
+      Scrabel.detectBlacklist(function(err, blacklist) {
+        Fs.readdir = readdir;
+        expect(err).to.exist();
+        expect(blacklist).to.not.exist();
+        done();
+      });
+    });
+
+    it('handles readFile() errors', function(done) {
+      var readFile = Fs.readFile;
+
+      Fs.readFile = function(name, encoding, callback) {
+        callback(new Error(name));
+      };
+
+      Scrabel.detectBlacklist(function(err, blacklist) {
+        Fs.readFile = readFile;
+        expect(err).to.exist();
+        expect(blacklist).to.not.exist();
+        done();
+      });
+    });
+
     it('uses feature detection to create blacklist', function(done) {
       Scrabel.detectBlacklist(function(err, blacklist) {
         expect(err).to.not.exist();
         expect(blacklist).to.be.an.array();
         done();
+      });
+    });
+
+    it('returns cached blacklist on subsequent calls', function(done) {
+      Scrabel.detectBlacklist(function(err, blacklist1) {
+        expect(err).to.not.exist();
+        expect(blacklist1).to.be.an.array();
+
+        Scrabel.detectBlacklist(function(err, blacklist2) {
+          expect(err).to.not.exist();
+          expect(blacklist2).to.be.an.array();
+          expect(blacklist1).to.deep.equal(blacklist2);
+          expect(blacklist1).to.not.equal(blacklist2);
+          done();
+        });
       });
     });
   });
@@ -216,14 +264,61 @@ describe('Scrabel', function() {
         done();
       });
     });
+
+    it('fails mapping an input directory to an output file', function(done) {
+      var outputFile = Path.join(outputDirectory, 'foo.js');
+
+      Fse.createFileSync(outputFile);
+
+      Files.getFilesFromArgs({
+        input: fixturesDirectory,
+        output: outputFile,
+      }, function(err, map) {
+        expect(err).to.exist();
+        expect(err instanceof TypeError).to.equal(true);
+        expect(err.message).to.match(/Cannot map input to output/);
+        expect(map).to.not.exist();
+        done();
+      });
+    });
   });
 
   describe('CLI', function() {
-    function runCLI(args) {
-      return ChildProcess.fork('bin/scrabel', args);
-    }
+    it('transpiles a single input file to a single output file', function(done) {
+      var inputFile = Path.join(fixturesDirectory, 'templateLiteral.js');
+      var outputFile = Path.join(outputDirectory, 'foo.js');
+      var argv = ['-i', inputFile, '-o', outputFile];
 
-    it('transpiles a directory of files', function(done) {
+      Cli.run(argv, function(err) {
+        expect(err).to.not.exist();
+        expect(Fse.existsSync(outputFile)).to.equal(true);
+        done();
+      });
+    });
+
+    it('errors if --input is not provided', function(done) {
+      var argv = ['-o', 'foo'];
+
+      Cli.run(argv, function(err) {
+        expect(err).to.exist();
+        done();
+      });
+    });
+
+    it('errors if --output is not provided', function(done) {
+      var argv = ['-i', 'foo'];
+
+      Cli.run(argv, function(err) {
+        expect(err).to.exist();
+        done();
+      });
+    });
+
+    it('transpiles a directory of files as separate', function(done) {
+      function runCLI(args) {
+        return ChildProcess.fork('bin/scrabel', args);
+      }
+
       var cli = runCLI([
         '-i',
         fixturesDirectory,
