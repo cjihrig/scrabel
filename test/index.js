@@ -140,202 +140,389 @@ describe('Scrabel', function() {
   });
 
   describe('Files', function() {
-    it('maps a single input file to a single output file', function(done) {
-      var inputFile = Path.join('fixtures', 'templateLiteral.js');
-      var outputFile = Path.join(outputDirectory, 'foo.js');
+    describe('getPathType()', function() {
+      it('handles individual files', function(done) {
+        var file = __filename;
 
-      Files.getFilesFromArgs({
-        input: inputFile,
-        output: outputFile,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(1);
-        expect(Path.isAbsolute(map[0].input)).to.equal(true);
-        expect(map[0].input).to.endWith('templateLiteral.js');
-        expect(map[0].output).to.equal(outputFile);
-        done();
-      });
-    });
-
-    it('maps a single input file to an existing output file', function(done) {
-      var inputFile = Path.join(fixturesDirectory, 'templateLiteral.js');
-      var outputFile = Path.join(outputDirectory, 'index.js');
-
-      Fse.createFileSync(outputFile);
-
-      Files.getFilesFromArgs({
-        input: inputFile,
-        output: outputFile,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(1);
-        expect(Path.isAbsolute(map[0].input)).to.equal(true);
-        expect(map[0].input).to.endWith('templateLiteral.js');
-        expect(map[0].output).to.equal(outputFile);
-        done();
-      });
-    });
-
-    it('maps a single input file to an existing output directory', function(done) {
-      var inputFile = Path.join('.', 'test', 'index.js');
-      var outputFile = Path.join(outputDirectory, 'index.js');
-
-      Fse.ensureDirSync(outputDirectory);
-
-      Files.getFilesFromArgs({
-        input: inputFile,
-        output: outputDirectory,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(1);
-        expect(Path.isAbsolute(map[0].input)).to.equal(true);
-        expect(map[0].input).to.endWith('index.js');
-        expect(map[0].output).to.equal(outputFile);
-        done();
-      });
-    });
-
-    it('maps a single input directory to an output directory', function(done) {
-      var inputDir = 'fixtures';
-      var outputFile = Path.join(outputDirectory, 'templateLiteral.js');
-
-      Files.getFilesFromArgs({
-        input: inputDir,
-        output: outputDirectory,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(1);
-        expect(map[0].output).to.equal(outputFile);
-        done();
-      });
-    });
-
-    it('maps a glob to an output directory', function(done) {
-      var inputPattern = Path.join('.', 'fixtures', '**');
-      var outputFile1 = Path.join(outputDirectory, 'templateLiteral.js');
-      var outputFile2 = Path.join(outputDirectory, 'dir1', 'class.js');
-      var outputFile3 = Path.join(outputDirectory, 'dir1', 'literals.js');
-
-      Files.getFilesFromArgs({
-        input: inputPattern,
-        output: outputDirectory,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(3);
-
-        map.forEach(function(file) {
-          expect(file.output === outputFile1 ||
-                 file.output === outputFile2 ||
-                 file.output === outputFile3).to.equal(true);
+        Files.getPathType(file, function(err, type) {
+          expect(err).to.not.exist();
+          expect(type).to.equal('file');
+          done();
         });
-
-        done();
       });
-    });
 
-    it('maps a glob with pattern dir/*', function(done) {
-      var inputPattern = Path.join('.', 'fixtures', 'dir1', '*');
-      var outputFile1 = Path.join(outputDirectory, 'class.js');
-      var outputFile2 = Path.join(outputDirectory, 'literals.js');
-
-      Files.getFilesFromArgs({
-        input: inputPattern,
-        output: outputDirectory,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(2);
-
-        map.forEach(function(file) {
-          expect(file.output === outputFile1 ||
-                 file.output === outputFile2).to.equal(true);
+      it('handles directories', function(done) {
+        Files.getPathType(fixturesDirectory, function(err, type) {
+          expect(err).to.not.exist();
+          expect(type).to.equal('directory');
+          done();
         });
-
-        done();
       });
-    });
 
-    it('handles a glob with no matches', function(done) {
-      var inputPattern = Path.join('.', 'fixtures', 'does_not_exist');
+      it('handles paths that do not exist', function(done) {
+        var file = __filename + 'foobar';
 
-      Files.getFilesFromArgs({
-        input: inputPattern,
-        output: outputDirectory,
-      }, function(err, map) {
-        expect(err).to.not.exist();
-        expect(map).to.be.an.array();
-        expect(map.length).to.equal(0);
-        done();
+        Files.getPathType(file, function(err, type) {
+          expect(err).to.not.exist();
+          expect(type).to.equal(null);
+          done();
+        });
       });
-    });
 
-    it('fails mapping an input directory to an output file', function(done) {
-      var outputFile = Path.join(outputDirectory, 'foo.js');
+      it('handles unknown file types', function(done) {
+        var stat = Fs.stat;
 
-      Fse.createFileSync(outputFile);
+        Fs.stat = function(path, callback) {
+          Fs.stat = stat;
 
-      Files.getFilesFromArgs({
-        input: fixturesDirectory,
-        output: outputFile,
-      }, function(err, map) {
-        expect(err).to.exist();
-        expect(err instanceof TypeError).to.equal(true);
-        expect(err.message).to.match(/Cannot map input to output/);
-        expect(map).to.not.exist();
-        done();
-      });
-    });
+          var stats = {
+            isFile: function() {
+              return false;
+            },
+            isDirectory: function() {
+              return false;
+            }
+          };
 
-    it('handles errors getting output type', function(done) {
-      var stat = Fs.stat;
-
-      Fs.stat = function(path, callback) {
-        callback(new Error('stats'));
-      };
-
-      Files.getFilesFromArgs({
-        input: fixturesDirectory,
-        output: outputDirectory,
-      }, function(err, map) {
-        Fs.stat = stat;
-        expect(err).to.exist();
-        expect(err.message).to.equal('stats');
-        expect(map).to.not.exist();
-        done();
-      });
-    });
-
-    it('handles unknown output type', function(done) {
-      var stat = Fs.stat;
-
-      Fs.stat = function(path, callback) {
-        var stats = {
-          isFile: function() {
-            return false;
-          },
-          isDirectory: function() {
-            return false;
-          }
+          callback(null, stats);
         };
 
-        callback(null, stats);
-      };
+        Files.getPathType(fixturesDirectory, function(err, type) {
+          expect(err).not.to.exist();
+          expect(type).to.equal('unknown');
+          done();
+        });
+      });
 
-      Files.getFilesFromArgs({
-        input: fixturesDirectory,
-        output: outputDirectory,
-      }, function(err, map) {
-        Fs.stat = stat;
-        expect(err).to.exist();
-        expect(err instanceof TypeError).to.equal(true);
-        expect(err.message).to.match(/Cannot map input to output/);
-        expect(map).to.not.exist();
-        done();
+      it('handles stat() errors', function(done) {
+        var stat = Fs.stat;
+
+        Fs.stat = function(path, callback) {
+          Fs.stat = stat;
+          callback(new Error('stats'));
+        };
+
+        Files.getPathType(fixturesDirectory, function(err, type) {
+          expect(err).to.exist();
+          expect(err.message).to.equal('stats');
+          expect(type).to.not.exist();
+          done();
+        });
+      });
+    });
+
+    describe('getInputPaths()', function() {
+      it('handles glob errors', function(done) {
+        var glob = Glob.Glob.prototype._process;
+
+        Glob.Glob.prototype._process = function(pattern, index, inGlobStar, callback) {
+          Glob.Glob.prototype._process = glob;
+          this.emit('error', new Error('glob'));
+        };
+
+        Files.getInputPaths(fixturesDirectory, function(err, results) {
+          expect(err).to.exist();
+          expect(err.message).to.equal('glob');
+          expect(results).to.not.exist();
+          done();
+        });
+      });
+
+      it('handles stat() errors', function(done) {
+        var stat = Fs.stat;
+
+        Fs.stat = function(path, callback) {
+          Fs.stat = stat;
+          callback(new Error('stats'));
+        };
+
+        Files.getInputPaths(fixturesDirectory, function(err, results) {
+          expect(err).to.exist();
+          expect(err.message).to.equal('stats');
+          expect(results).to.not.exist();
+          done();
+        });
+      });
+    });
+
+    describe('mapDirectoryToDirectory()', function() {
+      it('only includes files in results', function(done) {
+        var stat = Fs.stat;
+
+        Fs.stat = function(path, callback) {
+          Fs.stat = stat;
+
+          var stats = {
+            isFile: function() {
+              return false;
+            }
+          };
+
+          callback(null, stats);
+        };
+
+        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function(err, results) {
+          expect(err).to.not.exist();
+          expect(results).to.deep.equal([]);
+          done();
+        });
+      });
+
+      it('handles readdir() errors', function(done) {
+        var readdir = Fs.readdir;
+
+        Fs.readdir = function(path, callback) {
+          Fs.readdir = readdir;
+          callback(new Error('readdir'));
+        };
+
+        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function(err, results) {
+          expect(err).to.exist();
+          expect(err.message).to.equal('readdir');
+          expect(results).to.not.exist();
+          done();
+        });
+      });
+
+      it('handles stat() errors', function(done) {
+        var stat = Fs.stat;
+
+        Fs.stat = function(path, callback) {
+          Fs.stat = stat;
+          callback(new Error('stats'));
+        };
+
+        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function(err, results) {
+          expect(err).to.exist();
+          expect(err.message).to.equal('stats');
+          expect(results).to.not.exist();
+          done();
+        });
+      });
+    });
+
+    describe('mapFileToFile()', function(done) {
+      it('maps provided input to provided output', function(done) {
+        Files.mapFileToFile('foo', 'bar', function(err, result) {
+          expect(err).to.not.exist();
+          expect(result).to.deep.equal([{
+            input: 'foo',
+            output: 'bar'
+          }]);
+          done();
+        });
+      });
+    });
+
+    describe('mapFileToDirectory()', function(done) {
+      it('maps provided input to output directory', function(done) {
+        var input = Path.join(fixturesDirectory, 'foo');
+
+        Files.mapFileToDirectory(input, 'bar', function(err, result) {
+          expect(err).to.not.exist();
+          expect(result).to.deep.equal([{
+            input: input,
+            output: Path.join('bar', 'foo')
+          }]);
+          done();
+        });
+      });
+    });
+
+    describe('getFilesFromArgs()', function() {
+      it('maps a single input file to a single output file', function(done) {
+        var inputFile = Path.join('fixtures', 'templateLiteral.js');
+        var outputFile = Path.join(outputDirectory, 'foo.js');
+
+        Files.getFilesFromArgs({
+          input: inputFile,
+          output: outputFile,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(1);
+          expect(Path.isAbsolute(map[0].input)).to.equal(true);
+          expect(map[0].input).to.endWith('templateLiteral.js');
+          expect(map[0].output).to.equal(outputFile);
+          done();
+        });
+      });
+
+      it('maps a single input file to an existing output file', function(done) {
+        var inputFile = Path.join(fixturesDirectory, 'templateLiteral.js');
+        var outputFile = Path.join(outputDirectory, 'index.js');
+
+        Fse.createFileSync(outputFile);
+
+        Files.getFilesFromArgs({
+          input: inputFile,
+          output: outputFile,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(1);
+          expect(Path.isAbsolute(map[0].input)).to.equal(true);
+          expect(map[0].input).to.endWith('templateLiteral.js');
+          expect(map[0].output).to.equal(outputFile);
+          done();
+        });
+      });
+
+      it('maps a single input file to an existing output directory', function(done) {
+        var inputFile = Path.join('.', 'test', 'index.js');
+        var outputFile = Path.join(outputDirectory, 'index.js');
+
+        Fse.ensureDirSync(outputDirectory);
+
+        Files.getFilesFromArgs({
+          input: inputFile,
+          output: outputDirectory,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(1);
+          expect(Path.isAbsolute(map[0].input)).to.equal(true);
+          expect(map[0].input).to.endWith('index.js');
+          expect(map[0].output).to.equal(outputFile);
+          done();
+        });
+      });
+
+      it('maps a single input directory to an output directory', function(done) {
+        var inputDir = 'fixtures';
+        var outputFile = Path.join(outputDirectory, 'templateLiteral.js');
+
+        Files.getFilesFromArgs({
+          input: inputDir,
+          output: outputDirectory,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(1);
+          expect(map[0].output).to.equal(outputFile);
+          done();
+        });
+      });
+
+      it('maps a glob to an output directory', function(done) {
+        var inputPattern = Path.join('.', 'fixtures', '**');
+        var outputFile1 = Path.join(outputDirectory, 'templateLiteral.js');
+        var outputFile2 = Path.join(outputDirectory, 'dir1', 'class.js');
+        var outputFile3 = Path.join(outputDirectory, 'dir1', 'literals.js');
+
+        Files.getFilesFromArgs({
+          input: inputPattern,
+          output: outputDirectory,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(3);
+          map.forEach(function(file) {
+            expect(file.output === outputFile1 ||
+                   file.output === outputFile2 ||
+                   file.output === outputFile3).to.equal(true);
+          });
+          done();
+        });
+      });
+
+      it('maps a glob with pattern dir/*', function(done) {
+        var inputPattern = Path.join('.', 'fixtures', 'dir1', '*');
+        var outputFile1 = Path.join(outputDirectory, 'class.js');
+        var outputFile2 = Path.join(outputDirectory, 'literals.js');
+
+        Files.getFilesFromArgs({
+          input: inputPattern,
+          output: outputDirectory,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(2);
+          map.forEach(function(file) {
+            expect(file.output === outputFile1 ||
+                   file.output === outputFile2).to.equal(true);
+          });
+          done();
+        });
+      });
+
+      it('handles a glob with no matches', function(done) {
+        var inputPattern = Path.join('.', 'fixtures', 'does_not_exist');
+
+        Files.getFilesFromArgs({
+          input: inputPattern,
+          output: outputDirectory,
+        }, function(err, map) {
+          expect(err).to.not.exist();
+          expect(map).to.be.an.array();
+          expect(map.length).to.equal(0);
+          done();
+        });
+      });
+
+      it('fails mapping an input directory to an output file', function(done) {
+        var outputFile = Path.join(outputDirectory, 'foo.js');
+
+        Fse.createFileSync(outputFile);
+
+        Files.getFilesFromArgs({
+          input: fixturesDirectory,
+          output: outputFile,
+        }, function(err, map) {
+          expect(err).to.exist();
+          expect(err instanceof TypeError).to.equal(true);
+          expect(err.message).to.match(/Cannot map input to output/);
+          expect(map).to.not.exist();
+          done();
+        });
+      });
+
+      it('handles errors getting output type', function(done) {
+        var stat = Fs.stat;
+
+        Fs.stat = function(path, callback) {
+          callback(new Error('stats'));
+        };
+
+        Files.getFilesFromArgs({
+          input: fixturesDirectory,
+          output: outputDirectory,
+        }, function(err, map) {
+          Fs.stat = stat;
+          expect(err).to.exist();
+          expect(err.message).to.equal('stats');
+          expect(map).to.not.exist();
+          done();
+        });
+      });
+
+      it('handles unknown output type', function(done) {
+        var stat = Fs.stat;
+
+        Fs.stat = function(path, callback) {
+          var stats = {
+            isFile: function() {
+              return false;
+            },
+            isDirectory: function() {
+              return false;
+            }
+          };
+
+          callback(null, stats);
+        };
+
+        Files.getFilesFromArgs({
+          input: fixturesDirectory,
+          output: outputDirectory,
+        }, function(err, map) {
+          Fs.stat = stat;
+          expect(err).to.exist();
+          expect(err instanceof TypeError).to.equal(true);
+          expect(err.message).to.match(/Cannot map input to output/);
+          expect(map).to.not.exist();
+          done();
+        });
       });
     });
   });
