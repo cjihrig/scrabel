@@ -1,6 +1,6 @@
 {
   "name": "scrabel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Babel transpilation as needed",
   "author": "Continuation Labs <contact@continuation.io> (http://continuation.io/)",
   "main": "lib/index.js",
@@ -17,17 +17,19 @@
     "scrabel": "./bin/scrabel.js"
   },
   "scripts": {
-    "test": "lab -v -t 100 -a code"
+    "lint": "belly-button -I 'node_modules/**' -I 'transforms/**' -I 'fixtures/**'",
+    "test": "npm run lint && lab -v -t 100 -a code"
   },
   "dependencies": {
     "babel": "5.x.x",
     "bossy": "2.x.x",
-    "fs-extra": "0.24.x",
+    "fs-extra": "0.26.x",
     "glob": "5.x.x",
     "insync": "2.x.x",
     "semver": "5.x.x"
   },
   "devDependencies": {
+    "belly-button": "1.x.x",
     "code": "1.x.x",
     "lab": "6.x.x"
   },

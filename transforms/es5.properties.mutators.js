@@ -1,5 +1,5 @@
 var foo = {
-  get bar() {
+  get bar () {
     return "bar";
   }
 };

@@ -1,3 +1,3 @@
-function foo(x, y = 1, ...z) {
+function foo (x, y = 1, ...z) {
   return y;
 }

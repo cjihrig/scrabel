@@ -1,7 +1,6 @@
 'use strict';
 var ChildProcess = require('child_process');
 var Fs = require('fs');
-var Os = require('os');
 var Path = require('path');
 var Babel = require('babel');
 var Code = require('code');
@@ -24,13 +23,13 @@ Code.settings.comparePrototypes = false;
 var fixturesDirectory = Path.join(__dirname, '..', 'fixtures');
 var outputDirectory = Path.join(process.cwd(), 'test-tmp');
 
-describe('Scrabel', function() {
-  lab.afterEach(function(done) {
+describe('Scrabel', function () {
+  lab.afterEach(function (done) {
     Fse.remove(outputDirectory, done);
   });
 
-  describe('transpile()', function() {
-    it('transpiles input files using babel', function(done) {
+  describe('transpile()', function () {
+    it('transpiles input files using babel', function (done) {
       var files = [
         {
           input: Path.join(fixturesDirectory, 'templateLiteral.js'),
@@ -38,22 +37,22 @@ describe('Scrabel', function() {
         }
       ];
 
-      Scrabel.transpile(files, [], function(err) {
+      Scrabel.transpile(files, [], function (err) {
         expect(err).to.not.exist();
         done();
       });
     });
 
-    it('errors when transpilation fails', function(done) {
+    it('errors when transpilation fails', function (done) {
       var transformFile = Babel.transformFile;
       var files = [{input: 'foo', output: 'bar'}];
 
-      Babel.transformFile = function(file, options, callback) {
+      Babel.transformFile = function (file, options, callback) {
         Babel.transformFile = transformFile;
         callback(new Error('foo'));
       };
 
-      Scrabel.transpile(files, [], function(err) {
+      Scrabel.transpile(files, [], function (err) {
         expect(err instanceof Error).to.equal(true);
         expect(err.message).to.equal('foo');
         done();
@@ -61,12 +60,12 @@ describe('Scrabel', function() {
     });
   });
 
-  describe('createBlacklist()', function() {
-    it('blacklists features included in every release', function(done) {
+  describe('createBlacklist()', function () {
+    it('blacklists features included in every release', function (done) {
       var blacklist = Scrabel.createBlacklist('100.0.0', Features);
       var allFeatures = [];
 
-      Object.keys(Features).forEach(function(version) {
+      Object.keys(Features).forEach(function (version) {
         allFeatures = allFeatures.concat(Features[version]);
       });
 
@@ -74,7 +73,7 @@ describe('Scrabel', function() {
       done();
     });
 
-    it('does not blacklist anything for old versions of node', function(done) {
+    it('does not blacklist anything for old versions of node', function (done) {
       var blacklist = Scrabel.createBlacklist('0.8.0', Features);
 
       expect(blacklist).to.deep.equal([]);
@@ -82,17 +81,17 @@ describe('Scrabel', function() {
     });
   });
 
-  describe('detectBlacklist()', function() {
+  describe('detectBlacklist()', function () {
     // The ordering of the tests for this function must be maintained.
     // Specifically, the error tests must come first.
-    it('handles readdir() errors', function(done) {
+    it('handles readdir() errors', function (done) {
       var readdir = Fs.readdir;
 
-      Fs.readdir = function(dir, callback) {
+      Fs.readdir = function (dir, callback) {
         callback(new Error(dir));
       };
 
-      Scrabel.detectBlacklist(function(err, blacklist) {
+      Scrabel.detectBlacklist(function (err, blacklist) {
         Fs.readdir = readdir;
         expect(err).to.exist();
         expect(blacklist).to.not.exist();
@@ -100,14 +99,14 @@ describe('Scrabel', function() {
       });
     });
 
-    it('handles readFile() errors', function(done) {
+    it('handles readFile() errors', function (done) {
       var readFile = Fs.readFile;
 
-      Fs.readFile = function(name, encoding, callback) {
+      Fs.readFile = function (name, encoding, callback) {
         callback(new Error(name));
       };
 
-      Scrabel.detectBlacklist(function(err, blacklist) {
+      Scrabel.detectBlacklist(function (err, blacklist) {
         Fs.readFile = readFile;
         expect(err).to.exist();
         expect(blacklist).to.not.exist();
@@ -115,20 +114,20 @@ describe('Scrabel', function() {
       });
     });
 
-    it('uses feature detection to create blacklist', function(done) {
-      Scrabel.detectBlacklist(function(err, blacklist) {
+    it('uses feature detection to create blacklist', function (done) {
+      Scrabel.detectBlacklist(function (err, blacklist) {
         expect(err).to.not.exist();
         expect(blacklist).to.be.an.array();
         done();
       });
     });
 
-    it('returns cached blacklist on subsequent calls', function(done) {
-      Scrabel.detectBlacklist(function(err, blacklist1) {
+    it('returns cached blacklist on subsequent calls', function (done) {
+      Scrabel.detectBlacklist(function (err, blacklist1) {
         expect(err).to.not.exist();
         expect(blacklist1).to.be.an.array();
 
-        Scrabel.detectBlacklist(function(err, blacklist2) {
+        Scrabel.detectBlacklist(function (err, blacklist2) {
           expect(err).to.not.exist();
           expect(blacklist2).to.be.an.array();
           expect(blacklist1).to.deep.equal(blacklist2);
@@ -139,47 +138,47 @@ describe('Scrabel', function() {
     });
   });
 
-  describe('Files', function() {
-    describe('getPathType()', function() {
-      it('handles individual files', function(done) {
+  describe('Files', function () {
+    describe('getPathType()', function () {
+      it('handles individual files', function (done) {
         var file = __filename;
 
-        Files.getPathType(file, function(err, type) {
+        Files.getPathType(file, function (err, type) {
           expect(err).to.not.exist();
           expect(type).to.equal('file');
           done();
         });
       });
 
-      it('handles directories', function(done) {
-        Files.getPathType(fixturesDirectory, function(err, type) {
+      it('handles directories', function (done) {
+        Files.getPathType(fixturesDirectory, function (err, type) {
           expect(err).to.not.exist();
           expect(type).to.equal('directory');
           done();
         });
       });
 
-      it('handles paths that do not exist', function(done) {
+      it('handles paths that do not exist', function (done) {
         var file = __filename + 'foobar';
 
-        Files.getPathType(file, function(err, type) {
+        Files.getPathType(file, function (err, type) {
           expect(err).to.not.exist();
           expect(type).to.equal(null);
           done();
         });
       });
 
-      it('handles unknown file types', function(done) {
+      it('handles unknown file types', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           Fs.stat = stat;
 
           var stats = {
-            isFile: function() {
+            isFile: function () {
               return false;
             },
-            isDirectory: function() {
+            isDirectory: function () {
               return false;
             }
           };
@@ -187,22 +186,22 @@ describe('Scrabel', function() {
           callback(null, stats);
         };
 
-        Files.getPathType(fixturesDirectory, function(err, type) {
+        Files.getPathType(fixturesDirectory, function (err, type) {
           expect(err).not.to.exist();
           expect(type).to.equal('unknown');
           done();
         });
       });
 
-      it('handles stat() errors', function(done) {
+      it('handles stat() errors', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           Fs.stat = stat;
           callback(new Error('stats'));
         };
 
-        Files.getPathType(fixturesDirectory, function(err, type) {
+        Files.getPathType(fixturesDirectory, function (err, type) {
           expect(err).to.exist();
           expect(err.message).to.equal('stats');
           expect(type).to.not.exist();
@@ -211,16 +210,16 @@ describe('Scrabel', function() {
       });
     });
 
-    describe('getInputPaths()', function() {
-      it('handles glob errors', function(done) {
+    describe('getInputPaths()', function () {
+      it('handles glob errors', function (done) {
         var glob = Glob.Glob.prototype._process;
 
-        Glob.Glob.prototype._process = function(pattern, index, inGlobStar, callback) {
+        Glob.Glob.prototype._process = function (pattern, index, inGlobStar, callback) {
           Glob.Glob.prototype._process = glob;
           this.emit('error', new Error('glob'));
         };
 
-        Files.getInputPaths(fixturesDirectory, function(err, results) {
+        Files.getInputPaths(fixturesDirectory, function (err, results) {
           expect(err).to.exist();
           expect(err.message).to.equal('glob');
           expect(results).to.not.exist();
@@ -228,15 +227,15 @@ describe('Scrabel', function() {
         });
       });
 
-      it('handles stat() errors', function(done) {
+      it('handles stat() errors', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           Fs.stat = stat;
           callback(new Error('stats'));
         };
 
-        Files.getInputPaths(fixturesDirectory, function(err, results) {
+        Files.getInputPaths(fixturesDirectory, function (err, results) {
           expect(err).to.exist();
           expect(err.message).to.equal('stats');
           expect(results).to.not.exist();
@@ -245,15 +244,15 @@ describe('Scrabel', function() {
       });
     });
 
-    describe('mapDirectoryToDirectory()', function() {
-      it('only includes files in results', function(done) {
+    describe('mapDirectoryToDirectory()', function () {
+      it('only includes files in results', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           Fs.stat = stat;
 
           var stats = {
-            isFile: function() {
+            isFile: function () {
               return false;
             }
           };
@@ -261,22 +260,22 @@ describe('Scrabel', function() {
           callback(null, stats);
         };
 
-        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function(err, results) {
+        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function (err, results) {
           expect(err).to.not.exist();
           expect(results).to.deep.equal([]);
           done();
         });
       });
 
-      it('handles readdir() errors', function(done) {
+      it('handles readdir() errors', function (done) {
         var readdir = Fs.readdir;
 
-        Fs.readdir = function(path, callback) {
+        Fs.readdir = function (path, callback) {
           Fs.readdir = readdir;
           callback(new Error('readdir'));
         };
 
-        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function(err, results) {
+        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function (err, results) {
           expect(err).to.exist();
           expect(err.message).to.equal('readdir');
           expect(results).to.not.exist();
@@ -284,15 +283,15 @@ describe('Scrabel', function() {
         });
       });
 
-      it('handles stat() errors', function(done) {
+      it('handles stat() errors', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           Fs.stat = stat;
           callback(new Error('stats'));
         };
 
-        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function(err, results) {
+        Files.mapDirectoryToDirectory(fixturesDirectory, outputDirectory, function (err, results) {
           expect(err).to.exist();
           expect(err.message).to.equal('stats');
           expect(results).to.not.exist();
@@ -301,9 +300,9 @@ describe('Scrabel', function() {
       });
     });
 
-    describe('mapFileToFile()', function(done) {
-      it('maps provided input to provided output', function(done) {
-        Files.mapFileToFile('foo', 'bar', function(err, result) {
+    describe('mapFileToFile()', function (done) {
+      it('maps provided input to provided output', function (done) {
+        Files.mapFileToFile('foo', 'bar', function (err, result) {
           expect(err).to.not.exist();
           expect(result).to.deep.equal([{
             input: 'foo',
@@ -314,11 +313,11 @@ describe('Scrabel', function() {
       });
     });
 
-    describe('mapFileToDirectory()', function(done) {
-      it('maps provided input to output directory', function(done) {
+    describe('mapFileToDirectory()', function (done) {
+      it('maps provided input to output directory', function (done) {
         var input = Path.join(fixturesDirectory, 'foo');
 
-        Files.mapFileToDirectory(input, 'bar', function(err, result) {
+        Files.mapFileToDirectory(input, 'bar', function (err, result) {
           expect(err).to.not.exist();
           expect(result).to.deep.equal([{
             input: input,
@@ -329,15 +328,15 @@ describe('Scrabel', function() {
       });
     });
 
-    describe('getFilesFromArgs()', function() {
-      it('maps a single input file to a single output file', function(done) {
+    describe('getFilesFromArgs()', function () {
+      it('maps a single input file to a single output file', function (done) {
         var inputFile = Path.join('fixtures', 'templateLiteral.js');
         var outputFile = Path.join(outputDirectory, 'foo.js');
 
         Files.getFilesFromArgs({
           input: inputFile,
-          output: outputFile,
-        }, function(err, map) {
+          output: outputFile
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(1);
@@ -348,7 +347,7 @@ describe('Scrabel', function() {
         });
       });
 
-      it('maps a single input file to an existing output file', function(done) {
+      it('maps a single input file to an existing output file', function (done) {
         var inputFile = Path.join(fixturesDirectory, 'templateLiteral.js');
         var outputFile = Path.join(outputDirectory, 'index.js');
 
@@ -356,8 +355,8 @@ describe('Scrabel', function() {
 
         Files.getFilesFromArgs({
           input: inputFile,
-          output: outputFile,
-        }, function(err, map) {
+          output: outputFile
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(1);
@@ -368,7 +367,7 @@ describe('Scrabel', function() {
         });
       });
 
-      it('maps a single input file to an existing output directory', function(done) {
+      it('maps a single input file to an existing output directory', function (done) {
         var inputFile = Path.join('.', 'test', 'index.js');
         var outputFile = Path.join(outputDirectory, 'index.js');
 
@@ -376,8 +375,8 @@ describe('Scrabel', function() {
 
         Files.getFilesFromArgs({
           input: inputFile,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(1);
@@ -388,14 +387,14 @@ describe('Scrabel', function() {
         });
       });
 
-      it('maps a single input directory to an output directory', function(done) {
+      it('maps a single input directory to an output directory', function (done) {
         var inputDir = 'fixtures';
         var outputFile = Path.join(outputDirectory, 'templateLiteral.js');
 
         Files.getFilesFromArgs({
           input: inputDir,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(1);
@@ -404,7 +403,7 @@ describe('Scrabel', function() {
         });
       });
 
-      it('maps a glob to an output directory', function(done) {
+      it('maps a glob to an output directory', function (done) {
         var inputPattern = Path.join('.', 'fixtures', '**');
         var outputFile1 = Path.join(outputDirectory, 'templateLiteral.js');
         var outputFile2 = Path.join(outputDirectory, 'dir1', 'class.js');
@@ -412,12 +411,12 @@ describe('Scrabel', function() {
 
         Files.getFilesFromArgs({
           input: inputPattern,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(3);
-          map.forEach(function(file) {
+          map.forEach(function (file) {
             expect(file.output === outputFile1 ||
                    file.output === outputFile2 ||
                    file.output === outputFile3).to.equal(true);
@@ -426,19 +425,19 @@ describe('Scrabel', function() {
         });
       });
 
-      it('maps a glob with pattern dir/*', function(done) {
+      it('maps a glob with pattern dir/*', function (done) {
         var inputPattern = Path.join('.', 'fixtures', 'dir1', '*');
         var outputFile1 = Path.join(outputDirectory, 'class.js');
         var outputFile2 = Path.join(outputDirectory, 'literals.js');
 
         Files.getFilesFromArgs({
           input: inputPattern,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(2);
-          map.forEach(function(file) {
+          map.forEach(function (file) {
             expect(file.output === outputFile1 ||
                    file.output === outputFile2).to.equal(true);
           });
@@ -446,13 +445,13 @@ describe('Scrabel', function() {
         });
       });
 
-      it('handles a glob with no matches', function(done) {
+      it('handles a glob with no matches', function (done) {
         var inputPattern = Path.join('.', 'fixtures', 'does_not_exist');
 
         Files.getFilesFromArgs({
           input: inputPattern,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           expect(err).to.not.exist();
           expect(map).to.be.an.array();
           expect(map.length).to.equal(0);
@@ -460,15 +459,15 @@ describe('Scrabel', function() {
         });
       });
 
-      it('fails mapping an input directory to an output file', function(done) {
+      it('fails mapping an input directory to an output file', function (done) {
         var outputFile = Path.join(outputDirectory, 'foo.js');
 
         Fse.createFileSync(outputFile);
 
         Files.getFilesFromArgs({
           input: fixturesDirectory,
-          output: outputFile,
-        }, function(err, map) {
+          output: outputFile
+        }, function (err, map) {
           expect(err).to.exist();
           expect(err instanceof TypeError).to.equal(true);
           expect(err.message).to.match(/Cannot map input to output/);
@@ -477,17 +476,17 @@ describe('Scrabel', function() {
         });
       });
 
-      it('handles errors getting output type', function(done) {
+      it('handles errors getting output type', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           callback(new Error('stats'));
         };
 
         Files.getFilesFromArgs({
           input: fixturesDirectory,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           Fs.stat = stat;
           expect(err).to.exist();
           expect(err.message).to.equal('stats');
@@ -496,15 +495,15 @@ describe('Scrabel', function() {
         });
       });
 
-      it('handles unknown output type', function(done) {
+      it('handles unknown output type', function (done) {
         var stat = Fs.stat;
 
-        Fs.stat = function(path, callback) {
+        Fs.stat = function (path, callback) {
           var stats = {
-            isFile: function() {
+            isFile: function () {
               return false;
             },
-            isDirectory: function() {
+            isDirectory: function () {
               return false;
             }
           };
@@ -514,8 +513,8 @@ describe('Scrabel', function() {
 
         Files.getFilesFromArgs({
           input: fixturesDirectory,
-          output: outputDirectory,
-        }, function(err, map) {
+          output: outputDirectory
+        }, function (err, map) {
           Fs.stat = stat;
           expect(err).to.exist();
           expect(err instanceof TypeError).to.equal(true);
@@ -527,39 +526,39 @@ describe('Scrabel', function() {
     });
   });
 
-  describe('CLI', function() {
-    it('transpiles a single input file to a single output file', function(done) {
+  describe('CLI', function () {
+    it('transpiles a single input file to a single output file', function (done) {
       var inputFile = Path.join(fixturesDirectory, 'templateLiteral.js');
       var outputFile = Path.join(outputDirectory, 'foo.js');
       var argv = ['-i', inputFile, '-o', outputFile];
 
-      Cli.run(argv, function(err) {
+      Cli.run(argv, function (err) {
         expect(err).to.not.exist();
         expect(Fse.existsSync(outputFile)).to.equal(true);
         done();
       });
     });
 
-    it('errors if --input is not provided', function(done) {
+    it('errors if --input is not provided', function (done) {
       var argv = ['-o', 'foo'];
 
-      Cli.run(argv, function(err) {
+      Cli.run(argv, function (err) {
         expect(err).to.exist();
         done();
       });
     });
 
-    it('errors if --output is not provided', function(done) {
+    it('errors if --output is not provided', function (done) {
       var argv = ['-i', 'foo'];
 
-      Cli.run(argv, function(err) {
+      Cli.run(argv, function (err) {
         expect(err).to.exist();
         done();
       });
     });
 
-    it('transpiles a directory of files as separate', function(done) {
-      function runCLI(args) {
+    it('transpiles a directory of files as separate', function (done) {
+      function runCLI (args) {
         return ChildProcess.fork('bin/scrabel', args);
       }
 
@@ -570,11 +569,11 @@ describe('Scrabel', function() {
         outputDirectory
       ]);
 
-      cli.once('error', function(err) {
+      cli.once('error', function (err) {
         expect(err).to.not.exist();
       });
 
-      cli.once('close', function(code, signal) {
+      cli.once('close', function (code, signal) {
         expect(code).to.equal(0);
         expect(signal).to.equal(null);
         done();

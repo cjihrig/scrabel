@@ -1,6 +1,7 @@
 #!/usr/bin/env node
+'use strict';
 
-require('../lib/cli').run(process.argv, function(err) {
+require('../lib/cli').run(process.argv, function (err) {
   if (err) {
     console.error(err);
     process.exit(1);
