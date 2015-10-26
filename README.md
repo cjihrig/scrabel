@@ -32,7 +32,7 @@ Add `scrabel` as a dependency (or dev dependency) in your project's `package.jso
 ```
 "scripts": {
   "transpile": "scrabel -i src -o lib",
-  "prepublish": "npm run transpile"
+  "install": "npm run transpile"
 }
 ```
 
