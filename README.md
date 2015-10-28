@@ -3,7 +3,6 @@
 [![Current Version](https://img.shields.io/npm/v/scrabel.svg)](https://www.npmjs.org/package/scrabel)
 [![Build Status via Travis CI](https://travis-ci.org/continuationlabs/scrabel.svg?branch=master)](https://travis-ci.org/continuationlabs/scrabel)
 ![Dependencies](http://img.shields.io/david/continuationlabs/scrabel.svg)
-![devDependencies](http://img.shields.io/david/dev/continuationlabs/scrabel.svg)
 
 `scrabel` utilizes Babel to transpile code. `scrabel` only transforms code structures that are not natively supported by the user's version of Node. The motivation of this project is to avoid transpiling features that are natively supported. Take the following code for example:
 
